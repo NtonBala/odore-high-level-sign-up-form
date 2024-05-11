@@ -22,6 +22,4 @@ Mechanism of saving data through API is **out of the scope**.
 
 ## Task Completion
 
-> For better understanding of why _SOLID_ principles approach was chosen to complete the assignment, you may familiarize yourself with approach documentation. It can be found [here](./approach/index.md).
-
 Task completion can be found [here](./taskCompletion/index.md).

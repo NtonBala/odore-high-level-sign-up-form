@@ -1,83 +1,82 @@
 # Task Completion
 
-The assignment will be completed using _SOLID_ principles approach.
+Form instance is created combining state management reusable elements:
 
-> Before getting acquainted with Task Completion documentation you may want to read why this approach was chosen. You can find approach documentation [here](../approach/index.md).
+- Form
+- FormField, component created by `formFieldFactory` factory method
 
-The main goal of choosing _SOLID_ principles approach is:
+with a set of reusable form components, like `<FormTemplate />` and `<TextField />` or `<SelectField />`.
 
-- If we need to make a change to `SignupForm`, then such a change should be made in a single place and preferably in such a way that will not change the code that already works. Instead we should be able to add new code that will change the component's behavior.
-- It should be possible to create a new version of the component reusing already existing code.
-- The risk that new changes will break something should be minimized.
+Form implementation require next elements:
 
-## Components Documentation
+- form data model type
+- FormField element prepared for form model
+- initial values
+- on submit callback
+- Form component
+- form skeleton
 
-This is a high-level documentation for `SignupForm` component. Full implementation can be found [here](https://github.com/NtonBala/sign-up-form-solid-react).
+In order to create a form you need to wrap your controls by `<Form />` element which initializes a new instance of the form and provides the whole API for managing the values (including validation, submitting the changes, accessing all metadata etc).
 
-> [!IMPORTANT]
-> Asterisk (**\***) is used to highlight a reusable component, e.g. SignupForm\*.
+The form mechanism is based on react context so elements are available inside the component body.
 
-Components list with naming (real names):
+**Component tree via code sample**
 
-- [SignupForm](#signupform)\*
-  - [initialValues](#initialvalues)
-  - [useFormStore](#useformstore-tinitialstate-formstatet--signupformstore)
-  - [validate](#validate-values-signupformvalues--partialsignupformvalues)
-  - [submit](#submit-username-string-password-string--promiseunknown)
-  - [renderFormFields](#renderformfields-store-signupformstoresignupformvalues--jsxelement)
-  - [renderSubmitButton](#rendersubmitbutton-store-signupformstoresignupformvalues--jsxelement)
-- [TextInput](#textinput)\*
-- [SubmitButton](#submitbutton)\*
+SignUpForm component with only 2 fields, for _username_ and _password_ can look like this:
 
-### SignupForm\*
+```tsx
+interface SignUpFormData {
+  username: string | undefined;
+  password: string | undefined;
+}
 
-A **reusable component**, responsible for constructing a specialized version of native HTML form element. Reusability is achieved by reusing various parts of already existing code.
+const FormField = formFieldFactory<SignUpFormData>();
 
-It implements _OCP_ principle: `SignupForm` should allow to replace all of its implementation details without touching its own code. This is achieved by passing things that `SignupForm` uses as well as its implementation details via props. Such approach makes `SignupForm` _extendable_: instead of changing its code, you can change its behavior by passing implementation details via its props:
+export const SignUpForm = (): JSX.Element => {
+  const initialValues: SignUpFormData = {
+    username: undefined,
+    password: undefined,
+  };
 
-- `initialValues` - defines form store shape
-- `useFormStore` - a custom hook used to create form store (form state + state handlers)
-- `validate` - is used to get `errors` object
-- `submit` - to submit data to API endpoint
-- `renderFormFields` - provides form fields UI
-- `renderSubmitButton` - specifies how submit button is rendered
+  const save = (values: SignUpFormData) => {
+    // do what you need with form data
+  };
 
-This component is also responsible for providing general layout. If you want to change general layout you should change this component.
+  return (
+    <Form initialValues={initialValues} onSubmit={save}>
+      {(formRenderProps) => (
+        <FormTemplate onSave={formRenderProps.onSubmit}>
+          <div>
+            <FormField valuePath="username">{(fieldRenderProps) => <TextField {...fieldRenderProps} />}</FormField>
 
-#### initialValues
+            <FormField valuePath="password">{(fieldRenderProps) => <TextField type="password" {...fieldRenderProps} />}</FormField>
+          </div>
+        </FormTemplate>
+      )}
+    </Form>
+  );
+};
+```
 
-An object that is used as `FormState` generic type prop to define form store shape.
+**_Validation_**
 
-#### useFormStore: `<T>(initialState: FormState<T>) => SignupFormStore`
+All elements presented above are inserted into one component only for presentation purpose. In real case it's better to follow SRP principle and move distinct units to dedicated files.
 
-An optional custom generic react hook prop responsible to implement _SRP_ principle: to serve as a single place for creating, maintaining and holding form store logic.
+The following responsibilities can be identified:
 
-It also implements _OCP_ principle: you may use it if you want to change how the store is updated, otherwise just pass `initialValues` prop.
+1. Form skeleton (controls layout)
+1. Data structure definition
+1. Validation
+1. Submitting action
 
-#### validate: `(values: SignupFormValues) => Partial<SignupFormValues>`
+So sign-up form feature structure with _username_, _password_ and _gender select_ can look like this:
 
-An optional function prop responsible to implement _SRP_ principle: to serve as a single place for holding validation logic and creating a form errors object.
-
-It also implements _OCP_ principle: use it when your initial values differ from default `initialValues` prop.
-
-#### submit: `(formValues: SignupFormValues) => Promise<unknown>`
-
-An optional function prop responsible to implement _SRP_ principle: to serve as a single place for calling an API endpoint and submitting form data.
-
-It also implements _OCP_ principle: use it if you want other API calling behavior than default.
-
-#### renderFormFields: `(store: SignupFormStore<SignupFormValues>) => JSX.Element`
-
-An optional _render prop_ responsible to implement _OCP_ principle: if you want to change how form fields are rendered you can do it without modifying `SignupForm` component, just by passing this prop.
-
-#### renderSubmitButton: `(store: SignupFormStore<SignupFormValues>) => JSX.Element`
-
-An optional _render prop_ responsible to implement _OCP_ principle: if you want to change how _form submit button_ is rendered you can do it without modifying `SignupForm` component, just by passing this prop.
-
-### TextInput\*
-
-A _standalone_ _dumb_ **reusable component**, responsible to implement _SRP_ principle: to serve as a single place for holding render logic of _standalone text input_ field.
-
-### SubmitButton\*
-
-A _standalone_ _dumb_ **reusable component**, responsible to implement _SRP_ principle: to serve as a single place for holding _standalone submit button_ render logic.
+```
+ExtendedSignUpForm
+├── commands
+│   └── submitChanges.ts
+├── validation
+│   └── validate.ts
+├── data.ts
+└── ExtendedSignUpForm.tsx
+```
